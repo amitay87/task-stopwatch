@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>סטופר התמקדות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1B1E24;
+    --card-bg: #232730;
+    --card-bg-reached: #1E2A24;
+    --card-border: #33384333;
+    --card-border-reached: #3E7D5C;
+    --text-primary: #E8E6E1;
+    --text-muted: #8B92A3;
+    --text-faint: #5B6070;
+    --input-border: #454B58;
+    --track-bg: #33384355;
+    --amber: #E8A33D;
+    --amber-hover: #D9922E;
+    --green: #5FCF94;
+    --green-hover: #54BB85;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Heebo', system-ui, sans-serif;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 24rem;
+  }
+
+  .card {
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.3);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    transition: background-color 0.7s, border-color 0.7s;
+  }
+  .card.reached {
+    background: var(--card-bg-reached);
+    border-color: var(--card-border-reached);
+  }
+
+  /* Title */
+  .title-wrap {
+    margin-bottom: 2rem;
+    text-align: center;
+    min-height: 2.5rem;
+  }
+  .title-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition: color 0.2s;
+    padding: 0;
+  }
+  .title-btn:hover { color: #fff; }
+  .title-btn .placeholder { color: var(--text-faint); }
+  .title-input {
+    width: 100%;
+    background: transparent;
+    text-align: center;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    outline: none;
+    border: none;
+    border-bottom: 1px solid var(--input-border);
+    padding-bottom: 0.25rem;
+    font-family: inherit;
+  }
+  .title-input::placeholder { color: var(--text-faint); }
+
+  /* Stopwatch display */
+  .display-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .digits {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 2.9rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--amber);
+    transition: color 0.7s;
+  }
+  .digits.reached { color: var(--green); }
+
+  .status {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+  .status.reached { color: var(--green); }
+  .status svg { flex-shrink: 0; }
+
+  /* Progress bar */
+  .progress-track {
+    width: 100%;
+    height: 0.375rem;
+    border-radius: 999px;
+    background: var(--track-bg);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--amber);
+    transition: width 0.5s, background-color 0.7s;
+    width: 0%;
+  }
+  .progress-fill.reached { background: var(--green); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .icon-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .icon-btn:hover { color: var(--text-primary); background: var(--track-bg); }
+  .icon-btn.spacer { visibility: hidden; pointer-events: none; }
+
+  .play-btn {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 999px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: var(--amber);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+    transition: background-color 0.5s;
+  }
+  .play-btn:hover { background: var(--amber-hover); }
+  .play-btn.reached { background: var(--green); }
+  .play-btn.reached:hover { background: var(--green-hover); }
+  .play-btn svg { color: var(--bg); }
+
+  /* Goal setting */
+  .goal-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+  .goal-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+    padding: 0;
+  }
+  .goal-btn:hover { color: #fff; }
+  .goal-input {
+    width: 3.5rem;
+    background: var(--bg);
+    border: 1px solid var(--input-border);
+    border-radius: 0.375rem;
+    text-align: center;
+    color: var(--text-primary);
+    outline: none;
+    padding: 0.125rem 0;
+    font-family: inherit;
+    font-size: 0.875rem;
+  }
+
+  .footnote {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    margin-top: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .notif-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--card-border);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+  .notif-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    transition: color 0.2s;
+  }
+  .notif-btn:hover { color: var(--text-primary); }
+  .notif-btn.on { color: var(--green); }
+  .notif-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--text-faint);
+  }
+  .notif-btn.on .notif-dot { background: var(--green); }
+
+  /* Achievements launcher */
+  .achv-launcher {
+    text-align: center;
+    margin-bottom: 0.85rem;
+  }
+  .achv-launcher-btn {
+    background: none;
+    border: 1px solid var(--input-border);
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .achv-launcher-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+  }
+
+  /* Achievements modal */
+  .achv-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+  }
+  .achv-overlay.open { display: flex; }
+
+  .achv-modal {
+    width: 100%;
+    max-width: 26rem;
+    max-height: 78vh;
+    background: var(--card-bg);
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding: 1.25rem 1.5rem 1.5rem;
+    overflow-y: auto;
+    border: 1px solid var(--card-border);
+  }
+  @media (min-height: 700px) {
+    .achv-overlay { align-items: center; padding: 1rem; }
+    .achv-modal { border-radius: 1.25rem; max-height: 70vh; }
+  }
+
+  .achv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.1rem;
+  }
+  .achv-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .achv-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem;
+  }
+  .achv-close:hover { color: var(--text-primary); }
+
+  .achv-empty {
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 2rem 0.5rem;
+  }
+
+  .achv-day { margin-bottom: 1.3rem; }
+  .achv-day:last-child { margin-bottom: 0; }
+  .achv-day-title {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .achv-task-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.9rem;
+  }
+  .achv-task-row:last-child { border-bottom: none; }
+  .achv-task-title { color: var(--text-primary); }
+  .achv-task-time {
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="achv-launcher">
+    <button class="achv-launcher-btn" id="achvOpenBtn">🏆 הישגים</button>
+  </div>
+
+  <div class="card" id="card">
+    <!-- Title -->
+    <div class="title-wrap" id="titleWrap">
+      <button class="title-btn" id="titleBtn">
+        <span class="placeholder">מה המשימה? (לחצו להוספת כותרת)</span>
+      </button>
+    </div>
+
+    <!-- Stopwatch display -->
+    <div class="display-wrap">
+      <div class="digits" id="digits">00:00.00</div>
+      <div class="status" id="status">
+        <span id="statusText">יעד מינימלי: 5 דקות</span>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="icon-btn" id="resetBtn" aria-label="איפוס">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+
+      <button class="play-btn" id="playBtn" aria-label="התחלה">
+        <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right: -2px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+
+      <div class="icon-btn spacer"></div>
+    </div>
+
+    <!-- Goal setting -->
+    <div class="goal-row">
+      <span>זמן מינימלי להתמקדות:</span>
+      <button class="goal-btn" id="goalBtn">5 דקות</button>
+      <input class="goal-input" id="goalInput" type="number" min="1" value="5" style="display:none;" />
+    </div>
+
+    <!-- Notifications -->
+    <div class="notif-row">
+      <button class="notif-btn" id="notifBtn">
+        <span class="notif-dot"></span>
+        <span id="notifBtnText">הפעלת התראות בחלון ההתראות</span>
+      </button>
+    </div>
+    <div class="notif-row" style="border-top:none; padding-top:0; margin-top:0.4rem;">
+      <button class="notif-btn" id="testNotifBtn">
+        <span id="testNotifBtnText">שליחת התראת בדיקה עכשיו</span>
+      </button>
+    </div>
+  </div>
+
+  <p class="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.</p>
+</div>
+
+<div class="achv-overlay" id="achvOverlay">
+  <div class="achv-modal">
+    <div class="achv-header">
+      <h2>הישגים</h2>
+      <button class="achv-close" id="achvCloseBtn" aria-label="סגירה">✕</button>
+    </div>
+    <div id="achvBody"></div>
+  </div>
+</div>
+
+<script>
+  // State
+  let minMinutes = 5;
+  let elapsedMs = 0;
+  let running = false;
+  let startTs = null;   // Date.now() when current run segment started
+  let baseMs = 0;       // accumulated ms before current segment
+  let rafId = null;
+
+  // Elements
+  const card = document.getElementById('card');
+  const digitsEl = document.getElementById('digits');
+  const statusEl = document.getElementById('status');
+  const statusText = document.getElementById('statusText');
+  const progressFill = document.getElementById('progressFill');
+  const playBtn = document.getElementById('playBtn');
+  const playIcon = document.getElementById('playIcon');
+  const pauseIcon = document.getElementById('pauseIcon');
+  const resetBtn = document.getElementById('resetBtn');
+  const titleWrap = document.getElementById('titleWrap');
+  const goalBtn = document.getElementById('goalBtn');
+  const goalInput = document.getElementById('goalInput');
+  const notifBtn = document.getElementById('notifBtn');
+  const notifBtnText = document.getElementById('notifBtnText');
+  const testNotifBtn = document.getElementById('testNotifBtn');
+  const achvOpenBtn = document.getElementById('achvOpenBtn');
+  const achvCloseBtn = document.getElementById('achvCloseBtn');
+  const achvOverlay = document.getElementById('achvOverlay');
+  const achvBody = document.getElementById('achvBody');
+
+  let currentTitle = ''; // canonical source of truth for the task title
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatTime(totalMs) {
+    const totalSeconds = Math.floor(totalMs / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const cs = Math.floor((totalMs % 1000) / 10);
+    const base = h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    return `${base}.${pad(cs)}`;
+  }
+
+  function goalMs() {
+    return Math.max(1, Math.round(Number(minMinutes) || 0)) * 60 * 1000;
+  }
+
+  function render() {
+    const reached = elapsedMs >= goalMs();
+
+    digitsEl.textContent = formatTime(elapsedMs);
+    digitsEl.classList.toggle('reached', reached);
+
+    card.classList.toggle('reached', reached);
+    playBtn.classList.toggle('reached', reached);
+    progressFill.classList.toggle('reached', reached);
+    statusEl.classList.toggle('reached', reached);
+
+    if (reached) {
+      statusEl.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>בפוקוס — אפשר להמשיך</span>`;
+    } else {
+      statusEl.innerHTML = `<span>יעד מינימלי: ${minMinutes} דקות</span>`;
+    }
+
+    const pct = Math.min(100, (elapsedMs / goalMs()) * 100);
+    progressFill.style.width = pct + '%';
+  }
+
+  function tick() {
+    if (startTs != null) {
+      elapsedMs = baseMs + (Date.now() - startTs);
+      render();
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startRaf() {
+    if (rafId == null) rafId = requestAnimationFrame(tick);
+  }
+  function stopRaf() {
+    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  // ---- Notifications ----
+  let notifPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
+  let notifIntervalId = null;
+  let swRegistration = null;
+  let swError = null;
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      swRegistration = reg;
+    }).catch((e) => {
+      swError = e;
+    });
+  }
+
+  function updateNotifBtn() {
+    if (notifPermission === 'unsupported') {
+      notifBtnText.textContent = 'התראות אינן נתמכות בדפדפן זה';
+      notifBtn.classList.remove('on');
+      notifBtn.disabled = true;
+    } else if (notifPermission === 'granted') {
+      notifBtnText.textContent = 'התראות פעילות';
+      notifBtn.classList.add('on');
+    } else if (notifPermission === 'denied') {
+      notifBtnText.textContent = 'התראות חסומות (יש לאשר בהגדרות הדפדפן)';
+      notifBtn.classList.remove('on');
+    } else {
+      notifBtnText.textContent = 'הפעלת התראות בחלון ההתראות';
+      notifBtn.classList.remove('on');
+    }
+  }
+
+  function requestNotifPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then((perm) => {
+        notifPermission = perm;
+        updateNotifBtn();
+      });
+    }
+  }
+
+  notifBtn.addEventListener('click', requestNotifPermission);
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, h / 2, w / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function makeProgressImage(pct, reached) {
+    const w = 360, h = 40;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    // track
+    ctx.fillStyle = '#3A3F4B';
+    roundRectPath(ctx, 0, 0, w, h, h / 2);
+    ctx.fill();
+
+    // fill
+    const fillW = Math.max(h, Math.round((w * Math.min(100, Math.max(0, pct))) / 100));
+    ctx.fillStyle = reached ? '#5FCF94' : '#E8A33D';
+    roundRectPath(ctx, 0, 0, fillW, h, h / 2);
+    ctx.fill();
+
+    return canvas.toDataURL('image/png');
+  }
+
+  function formatElapsedNoCentis(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+  }
+
+  // Central place that actually shows a notification, preferring the
+  // service worker path (required on Android Chrome) and falling back
+  // to the plain Notification constructor (works on desktop browsers).
+  function showNotif(title, options, onError) {
+    if (swRegistration) {
+      swRegistration.showNotification(title, options).catch((e) => {
+        if (onError) onError(e);
+      });
+      return;
+    }
+    if ('serviceWorker' in navigator) {
+      // Registered but not ready yet, or registration failed — try once it's ready.
+      navigator.serviceWorker.ready.then((reg) => {
+        swRegistration = reg;
+        reg.showNotification(title, options).catch((e) => {
+          if (onError) onError(e);
+        });
+      }).catch((e) => {
+        if (onError) onError(e);
+      });
+      return;
+    }
+    // No service worker support at all — try the plain constructor.
+    try {
+      new Notification(title, options);
+    } catch (e) {
+      if (onError) onError(e);
+    }
+  }
+
+  function pushNotification() {
+    if (notifPermission !== 'granted') return;
+    const reached = elapsedMs >= goalMs();
+    const pct = Math.min(100, (elapsedMs / goalMs()) * 100);
+    const taskTitle = (currentTitle && currentTitle.trim()) || 'סטופר התמקדות';
+    const timeStr = formatElapsedNoCentis(elapsedMs);
+    const body = reached
+      ? `${timeStr} • בפוקוס — היעד הושג`
+      : `${timeStr} • יעד מינימלי: ${minMinutes} דקות`;
+    const img = makeProgressImage(pct, reached);
+
+    showNotif(taskTitle, {
+      body,
+      tag: 'focus-stopwatch',
+      image: img,
+      icon: img,
+      silent: true,
+    });
+  }
+
+  function startNotifUpdates() {
+    if (notifPermission !== 'granted') return;
+    pushNotification();
+    if (notifIntervalId == null) {
+      notifIntervalId = setInterval(pushNotification, 3000);
+    }
+  }
+
+  function stopNotifUpdates(finalPush) {
+    if (notifIntervalId != null) {
+      clearInterval(notifIntervalId);
+      notifIntervalId = null;
+    }
+    if (finalPush) pushNotification();
+  }
+
+  function closeNotification() {
+    if (swRegistration) {
+      swRegistration.getNotifications({ tag: 'focus-stopwatch' }).then((list) => {
+        list.forEach((n) => n.close());
+      });
+    }
+  }
+
+  updateNotifBtn();
+
+  // ---- Simple test notification (for debugging) ----
+  function fireTestNotification(source) {
+    if (!('Notification' in window)) {
+      alert('הדפדפן הזה לא תומך בהתראות בכלל.');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      alert('אין עדיין הרשאה. לחצו קודם על "הפעלת התראות".');
+      requestNotifPermission();
+      return;
+    }
+    showNotif(
+      'בדיקת התראה ✅',
+      { body: 'אם אתה רואה את זה — ההתראות עובדות תקין! (' + source + ')', tag: 'test-notification' },
+      (e) => alert('שגיאה בהצגת ההתראה: ' + (e && e.message ? e.message : e))
+    );
+  }
+
+  testNotifBtn.addEventListener('click', () => fireTestNotification('לחיצת כפתור'));
+
+  // Auto-fire once on load if permission is already granted, to isolate
+  // whether the basic notification pipeline works independent of the stopwatch logic.
+  window.addEventListener('load', () => {
+    if (('Notification' in window) && Notification.permission === 'granted') {
+      setTimeout(() => fireTestNotification('טעינת דף'), 1200);
+    }
+  });
+
+  // Play / pause
+  playBtn.addEventListener('click', () => {
+    if (running) {
+      baseMs = elapsedMs;
+      startTs = null;
+      running = false;
+      stopRaf();
+      stopNotifUpdates(true);
+      playIcon.style.display = '';
+      pauseIcon.style.display = 'none';
+      playBtn.setAttribute('aria-label', 'התחלה');
+    } else {
+      startTs = Date.now();
+      running = true;
+      startRaf();
+      startNotifUpdates();
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = '';
+      playBtn.setAttribute('aria-label', 'השהיה');
+    }
+    render();
+    saveState();
+  });
+
+  // Reset
+  resetBtn.addEventListener('click', () => {
+    const reached = elapsedMs >= goalMs();
+    if (reached && elapsedMs > 0) {
+      recordAchievement(currentTitle, elapsedMs);
+    }
+    running = false;
+    startTs = null;
+    baseMs = 0;
+    elapsedMs = 0;
+    stopRaf();
+    stopNotifUpdates(false);
+    closeNotification();
+    playIcon.style.display = '';
+    pauseIcon.style.display = 'none';
+    playBtn.setAttribute('aria-label', 'התחלה');
+    render();
+    saveState();
+  });
+
+  // Title editing
+  function renderTitleDisplay() {
+    titleWrap.innerHTML = currentTitle
+      ? `<button class="title-btn" id="titleBtnEl">${escapeHtml(currentTitle)}</button>`
+      : `<button class="title-btn" id="titleBtnEl"><span class="placeholder">מה המשימה? (לחצו להוספת כותרת)</span></button>`;
+    document.getElementById('titleBtnEl').addEventListener('click', enterTitleEdit);
+  }
+
+  function enterTitleEdit() {
+    titleWrap.innerHTML = `<input class="title-input" id="titleInput" placeholder="לצאת להליכה בשכונה" value="${escapeHtml(currentTitle)}" />`;
+    const input = document.getElementById('titleInput');
+    input.focus();
+    input.addEventListener('blur', commitTitle);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+  }
+
+  function commitTitle() {
+    const input = document.getElementById('titleInput');
+    currentTitle = input.value.trim();
+    renderTitleDisplay();
+    saveState();
+  }
+
+  // Goal editing
+  function enterGoalEdit() {
+    goalBtn.style.display = 'none';
+    goalInput.style.display = '';
+    goalInput.value = minMinutes;
+    goalInput.focus();
+    goalInput.select();
+  }
+
+  function commitGoal() {
+    const val = Number(goalInput.value);
+    minMinutes = val > 0 ? val : 1;
+    goalBtn.textContent = `${minMinutes} דקות`;
+    goalInput.style.display = 'none';
+    goalBtn.style.display = '';
+    render();
+    saveState();
+  }
+
+  goalBtn.addEventListener('click', enterGoalEdit);
+  goalInput.addEventListener('blur', commitGoal);
+  goalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') goalInput.blur(); });
+
+  // ---- Session persistence (survives reload / long inactivity) ----
+  const STATE_KEY = 'focusStopwatch_state_v1';
+
+  function saveState() {
+    try {
+      localStorage.setItem(STATE_KEY, JSON.stringify({
+        title: currentTitle,
+        minMinutes,
+        running,
+        startTs,
+        baseMs,
+      }));
+    } catch (e) { /* storage unavailable; ignore */ }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+
+      currentTitle = s.title || '';
+      minMinutes = s.minMinutes > 0 ? s.minMinutes : 5;
+      goalBtn.textContent = `${minMinutes} דקות`;
+
+      if (s.running && s.startTs) {
+        baseMs = s.baseMs || 0;
+        startTs = s.startTs;
+        running = true;
+        elapsedMs = baseMs + (Date.now() - startTs);
+        startRaf();
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = '';
+        playBtn.setAttribute('aria-label', 'השהיה');
+        // Resume notification updates only if permission was already granted;
+        // never re-prompt automatically.
+        if (notifPermission === 'granted') startNotifUpdates();
+      } else {
+        baseMs = s.baseMs || 0;
+        elapsedMs = baseMs;
+        running = false;
+      }
+    } catch (e) { /* corrupt/unavailable state; start fresh */ }
+  }
+
+  window.addEventListener('beforeunload', saveState);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveState();
+  });
+
+  // ---- Achievements ----
+  const ACHV_KEY = 'focusStopwatch_achievements_v1';
+
+  function loadAchievements() {
+    try {
+      const raw = localStorage.getItem(ACHV_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveAchievements(list) {
+    try { localStorage.setItem(ACHV_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+  }
+
+  function dateKeyOf(date) {
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  function recordAchievement(title, durationMs) {
+    const list = loadAchievements();
+    const now = new Date();
+    list.push({
+      date: dateKeyOf(now),
+      title: (title && title.trim()) || 'ללא כותרת',
+      durationMs,
+      completedAt: now.getTime(),
+    });
+    saveAchievements(list);
+  }
+
+  function dayLabel(dateKey) {
+    const todayKey = dateKeyOf(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = dateKeyOf(yesterday);
+    if (dateKey === todayKey) return 'היום';
+    if (dateKey === yesterdayKey) return 'אתמול';
+    const d = new Date(dateKey + 'T00:00:00');
+    return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function renderAchievements() {
+    const list = loadAchievements();
+    if (list.length === 0) {
+      achvBody.innerHTML = '<p class="achv-empty">אין עדיין הישגים. התחילו סטופר והגיעו ליעד כדי לראות אותו כאן 🎯</p>';
+      return;
+    }
+
+    const byDate = {};
+    list.forEach((item) => {
+      if (!byDate[item.date]) byDate[item.date] = {};
+      if (!byDate[item.date][item.title]) byDate[item.date][item.title] = { totalMs: 0, count: 0 };
+      byDate[item.date][item.title].totalMs += item.durationMs;
+      byDate[item.date][item.title].count += 1;
+    });
+
+    const dates = Object.keys(byDate).sort().reverse();
+
+    let html = '';
+    dates.forEach((dateKey) => {
+      html += `<div class="achv-day"><div class="achv-day-title">${dayLabel(dateKey)}</div><div>`;
+      const tasks = Object.entries(byDate[dateKey]).sort((a, b) => b[1].totalMs - a[1].totalMs);
+      tasks.forEach(([title, info]) => {
+        const countLabel = info.count > 1 ? ` · ${info.count} סבבים` : '';
+        html += `<div class="achv-task-row"><span class="achv-task-title">${escapeHtml(title)}</span><span class="achv-task-time">${formatElapsedNoCentis(info.totalMs)}${countLabel}</span></div>`;
+      });
+      html += '</div></div>';
+    });
+
+    achvBody.innerHTML = html;
+  }
+
+  function openAchievements() {
+    renderAchievements();
+    achvOverlay.classList.add('open');
+  }
+  function closeAchievements() {
+    achvOverlay.classList.remove('open');
+  }
+
+  achvOpenBtn.addEventListener('click', openAchievements);
+  achvCloseBtn.addEventListener('click', closeAchievements);
+  achvOverlay.addEventListener('click', (e) => {
+    if (e.target === achvOverlay) closeAchievements();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAchievements();
+  });
+
+  // ---- Init ----
+  loadState();
+  renderTitleDisplay();
+  render();
+</script>
+</body>
+</html>
