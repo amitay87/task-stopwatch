@@ -269,6 +269,10 @@
     max-width: 24rem;
     align-items: stretch;
   }
+  /* Mobile: stopwatch first, achievements panel below it */
+  .wrap { order: 1; }
+  .achv-panel { order: 2; }
+
   @media (min-width: 860px) {
     .layout {
       flex-direction: row;
@@ -277,8 +281,9 @@
       max-width: 52rem;
       gap: 1.5rem;
     }
-    .wrap { flex: 0 0 24rem; max-width: 24rem; }
-    .achv-panel { flex: 0 0 20rem; max-width: 20rem; }
+    /* Desktop: reset order so DOM order applies (achv-panel first = right side in RTL) */
+    .wrap { order: 0; flex: 0 0 24rem; max-width: 24rem; }
+    .achv-panel { order: 0; flex: 0 0 20rem; max-width: 20rem; }
   }
 
   /* Achievements panel (collapsible, not a popup) */
