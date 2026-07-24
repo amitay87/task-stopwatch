@@ -37,10 +37,30 @@
 
   body {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.85rem;
     padding: 16px;
   }
+
+  .lang-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .lang-select {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--input-border);
+    border-radius: 0.6rem;
+    padding: 0.4rem 0.7rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+  }
+  .lang-select:hover { border-color: var(--text-muted); }
 
   .wrap {
     width: 100%;
@@ -368,10 +388,17 @@
 </head>
 <body>
 
+<div class="lang-row">
+  <select id="langSelect" class="lang-select" aria-label="Language / שפה">
+    <option value="he">עברית</option>
+    <option value="en">English</option>
+  </select>
+</div>
+
 <div class="layout">
   <div class="achv-panel" id="achvPanel">
     <button class="achv-panel-header" id="achvToggleBtn">
-      <span>🏆 הישגים</span>
+      <span id="achvHeaderText">🏆 הישגים</span>
       <svg class="achv-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="achv-panel-body">
@@ -417,7 +444,7 @@
 
     <!-- Goal setting -->
     <div class="goal-row">
-      <span>זמן מינימלי להתמקדות:</span>
+      <span id="goalLabel">זמן מינימלי להתמקדות:</span>
       <button class="goal-btn" id="goalBtn">5 דקות</button>
       <input class="goal-input" id="goalInput" type="number" min="1" value="5" style="display:none;" />
     </div>
@@ -441,7 +468,7 @@
     </div>
   </div>
 
-  <p class="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.</p>
+  <p class="footnote" id="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.</p>
   </div>
 </div>
 
@@ -470,11 +497,16 @@
   const notifBtn = document.getElementById('notifBtn');
   const notifBtnText = document.getElementById('notifBtnText');
   const testNotifBtn = document.getElementById('testNotifBtn');
+  const testNotifBtnText = document.getElementById('testNotifBtnText');
   const refreshBtn = document.getElementById('refreshBtn');
   const refreshBtnText = document.getElementById('refreshBtnText');
   const achvPanel = document.getElementById('achvPanel');
   const achvToggleBtn = document.getElementById('achvToggleBtn');
   const achvBody = document.getElementById('achvBody');
+  const achvHeaderText = document.getElementById('achvHeaderText');
+  const goalLabel = document.getElementById('goalLabel');
+  const footnote = document.getElementById('footnote');
+  const langSelect = document.getElementById('langSelect');
 
   let currentTitle = ''; // canonical source of truth for the task title
 
@@ -485,6 +517,135 @@
     div.textContent = str;
     return div.innerHTML;
   }
+
+  // ---- Translations ----
+  const TRANSLATIONS = {
+    he: {
+      pageTitle: 'סטופר התמקדות',
+      titlePlaceholder: 'מה המשימה? (לחצו להוספת כותרת)',
+      titleInputPlaceholder: 'לצאת להליכה בשכונה',
+      statusReached: 'בפוקוס — אפשר להמשיך',
+      statusGoal: (min) => `יעד מינימלי: ${min} דקות`,
+      goalLabel: 'זמן מינימלי להתמקדות:',
+      goalUnit: (min) => `${min} דקות`,
+      ariaReset: 'איפוס',
+      ariaStart: 'התחלה',
+      ariaPause: 'השהיה',
+      notifEnable: 'הפעלת התראות בחלון ההתראות',
+      notifOn: 'התראות פעילות',
+      notifDenied: 'התראות חסומות (יש לאשר בהגדרות הדפדפן)',
+      notifUnsupported: 'התראות אינן נתמכות בדפדפן זה',
+      testNotifBtn: 'שליחת התראת בדיקה עכשיו',
+      refreshBtn: '🔄 טעינת הגרסה העדכנית ביותר',
+      refreshing: '🔄 מרענן...',
+      footnote: 'הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.',
+      achvHeader: '🏆 הישגים',
+      achvEmpty: 'אין עדיין הישגים. התחילו סטופר והגיעו ליעד כדי לראות אותו כאן 🎯',
+      today: 'היום',
+      yesterday: 'אתמול',
+      roundsSuffix: (n) => ` · ${n} סבבים`,
+      noTitle: 'ללא כותרת',
+      defaultTaskTitle: 'סטופר התמקדות',
+      notifBodyReached: (timeStr) => `${timeStr} • בפוקוס — היעד הושג`,
+      notifBodyGoal: (timeStr, min) => `${timeStr} • יעד מינימלי: ${min} דקות`,
+      testNotifTitle: 'בדיקת התראה ✅',
+      testNotifBody: (source) => `אם אתה רואה את זה — ההתראות עובדות תקין! (${source})`,
+      testNotifSourceClick: 'לחיצת כפתור',
+      testNotifSourceLoad: 'טעינת דף',
+      alertUnsupported: 'הדפדפן הזה לא תומך בהתראות בכלל.',
+      alertNeedPermission: 'אין עדיין הרשאה. לחצו קודם על "הפעלת התראות".',
+      alertShowError: (msg) => `שגיאה בהצגת ההתראה: ${msg}`,
+      dateLocale: 'he-IL',
+    },
+    en: {
+      pageTitle: 'Focus Stopwatch',
+      titlePlaceholder: "What's the task? (tap to add a title)",
+      titleInputPlaceholder: 'Go for a walk around the block',
+      statusReached: 'In focus — keep going',
+      statusGoal: (min) => `Minimum goal: ${min} min`,
+      goalLabel: 'Minimum focus time:',
+      goalUnit: (min) => `${min} min`,
+      ariaReset: 'Reset',
+      ariaStart: 'Start',
+      ariaPause: 'Pause',
+      notifEnable: 'Enable notifications',
+      notifOn: 'Notifications active',
+      notifDenied: 'Notifications blocked (allow them in browser settings)',
+      notifUnsupported: "Notifications aren't supported in this browser",
+      testNotifBtn: 'Send a test notification now',
+      refreshBtn: '🔄 Load the latest version',
+      refreshing: '🔄 Refreshing...',
+      footnote: "The stopwatch counts up and never rings — it just turns green once you pass the goal, and keeps running.<br>Notifications need one-time browser permission, and update every few seconds while running.<br>Keep the sw.js file in the same folder as the HTML file.",
+      achvHeader: '🏆 Achievements',
+      achvEmpty: 'No achievements yet. Start a session and hit your goal to see it here 🎯',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      roundsSuffix: (n) => ` · ${n} rounds`,
+      noTitle: 'Untitled',
+      defaultTaskTitle: 'Focus Stopwatch',
+      notifBodyReached: (timeStr) => `${timeStr} • In focus — goal reached`,
+      notifBodyGoal: (timeStr, min) => `${timeStr} • Minimum goal: ${min} min`,
+      testNotifTitle: 'Test notification ✅',
+      testNotifBody: (source) => `If you can see this — notifications are working! (${source})`,
+      testNotifSourceClick: 'button click',
+      testNotifSourceLoad: 'page load',
+      alertUnsupported: "This browser doesn't support notifications at all.",
+      alertNeedPermission: 'No permission yet. Tap "Enable notifications" first.',
+      alertShowError: (msg) => `Error showing notification: ${msg}`,
+      dateLocale: 'en-US',
+    },
+  };
+
+  const LANG_KEY = 'focusStopwatch_lang_v1';
+
+  function detectDefaultLang() {
+    const langs = navigator.languages || [navigator.language || 'en'];
+    return langs.some((l) => l && l.toLowerCase().startsWith('he')) ? 'he' : 'en';
+  }
+
+  let currentLang;
+  try {
+    currentLang = localStorage.getItem(LANG_KEY) || detectDefaultLang();
+  } catch (e) {
+    currentLang = detectDefaultLang();
+  }
+  if (currentLang !== 'he' && currentLang !== 'en') currentLang = 'en';
+
+  function t(key, ...args) {
+    const entry = TRANSLATIONS[currentLang][key];
+    return typeof entry === 'function' ? entry(...args) : entry;
+  }
+
+  function applyLanguage(lang, opts) {
+    const skipSave = opts && opts.skipSave;
+    currentLang = (lang === 'he') ? 'he' : 'en';
+
+    if (!skipSave) {
+      try { localStorage.setItem(LANG_KEY, currentLang); } catch (e) { /* ignore */ }
+    }
+
+    document.documentElement.setAttribute('lang', currentLang);
+    document.documentElement.setAttribute('dir', currentLang === 'he' ? 'rtl' : 'ltr');
+    document.title = t('pageTitle');
+    langSelect.value = currentLang;
+
+    goalLabel.textContent = t('goalLabel');
+    goalBtn.textContent = t('goalUnit', minMinutes);
+    footnote.innerHTML = t('footnote');
+    achvHeaderText.textContent = t('achvHeader');
+    testNotifBtnText.textContent = t('testNotifBtn');
+    if (!refreshBtn.disabled) refreshBtnText.textContent = t('refreshBtn');
+
+    resetBtn.setAttribute('aria-label', t('ariaReset'));
+    playBtn.setAttribute('aria-label', running ? t('ariaPause') : t('ariaStart'));
+
+    renderTitleDisplay();
+    updateNotifBtn();
+    render();
+    if (achvPanel.classList.contains('open')) renderAchievements();
+  }
+
+  langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
 
   function formatTime(totalMs) {
     const totalSeconds = Math.floor(totalMs / 1000);
@@ -514,9 +675,9 @@
     if (reached) {
       statusEl.innerHTML = `
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>בפוקוס — אפשר להמשיך</span>`;
+        <span>${t('statusReached')}</span>`;
     } else {
-      statusEl.innerHTML = `<span>יעד מינימלי: ${minMinutes} דקות</span>`;
+      statusEl.innerHTML = `<span>${t('statusGoal', minMinutes)}</span>`;
     }
 
     const pct = Math.min(100, (elapsedMs / goalMs()) * 100);
@@ -554,17 +715,17 @@
 
   function updateNotifBtn() {
     if (notifPermission === 'unsupported') {
-      notifBtnText.textContent = 'התראות אינן נתמכות בדפדפן זה';
+      notifBtnText.textContent = t('notifUnsupported');
       notifBtn.classList.remove('on');
       notifBtn.disabled = true;
     } else if (notifPermission === 'granted') {
-      notifBtnText.textContent = 'התראות פעילות';
+      notifBtnText.textContent = t('notifOn');
       notifBtn.classList.add('on');
     } else if (notifPermission === 'denied') {
-      notifBtnText.textContent = 'התראות חסומות (יש לאשר בהגדרות הדפדפן)';
+      notifBtnText.textContent = t('notifDenied');
       notifBtn.classList.remove('on');
     } else {
-      notifBtnText.textContent = 'הפעלת התראות בחלון ההתראות';
+      notifBtnText.textContent = t('notifEnable');
       notifBtn.classList.remove('on');
     }
   }
@@ -655,11 +816,11 @@
     if (notifPermission !== 'granted') return;
     const reached = elapsedMs >= goalMs();
     const pct = Math.min(100, (elapsedMs / goalMs()) * 100);
-    const taskTitle = (currentTitle && currentTitle.trim()) || 'סטופר התמקדות';
+    const taskTitle = (currentTitle && currentTitle.trim()) || t('defaultTaskTitle');
     const timeStr = formatElapsedNoCentis(elapsedMs);
     const body = reached
-      ? `${timeStr} • בפוקוס — היעד הושג`
-      : `${timeStr} • יעד מינימלי: ${minMinutes} דקות`;
+      ? t('notifBodyReached', timeStr)
+      : t('notifBodyGoal', timeStr, minMinutes);
     const img = makeProgressImage(pct, reached);
 
     showNotif(taskTitle, {
@@ -700,28 +861,28 @@
   // ---- Simple test notification (for debugging) ----
   function fireTestNotification(source) {
     if (!('Notification' in window)) {
-      alert('הדפדפן הזה לא תומך בהתראות בכלל.');
+      alert(t('alertUnsupported'));
       return;
     }
     if (Notification.permission !== 'granted') {
-      alert('אין עדיין הרשאה. לחצו קודם על "הפעלת התראות".');
+      alert(t('alertNeedPermission'));
       requestNotifPermission();
       return;
     }
     showNotif(
-      'בדיקת התראה ✅',
-      { body: 'אם אתה רואה את זה — ההתראות עובדות תקין! (' + source + ')', tag: 'test-notification' },
-      (e) => alert('שגיאה בהצגת ההתראה: ' + (e && e.message ? e.message : e))
+      t('testNotifTitle'),
+      { body: t('testNotifBody', source), tag: 'test-notification' },
+      (e) => alert(t('alertShowError', (e && e.message) ? e.message : e))
     );
   }
 
-  testNotifBtn.addEventListener('click', () => fireTestNotification('לחיצת כפתור'));
+  testNotifBtn.addEventListener('click', () => fireTestNotification(t('testNotifSourceClick')));
 
   // Auto-fire once on load if permission is already granted, to isolate
   // whether the basic notification pipeline works independent of the stopwatch logic.
   window.addEventListener('load', () => {
     if (('Notification' in window) && Notification.permission === 'granted') {
-      setTimeout(() => fireTestNotification('טעינת דף'), 1200);
+      setTimeout(() => fireTestNotification(t('testNotifSourceLoad')), 1200);
     }
   });
 
@@ -735,7 +896,7 @@
       stopNotifUpdates(true);
       playIcon.style.display = '';
       pauseIcon.style.display = 'none';
-      playBtn.setAttribute('aria-label', 'התחלה');
+      playBtn.setAttribute('aria-label', t('ariaStart'));
     } else {
       startTs = Date.now();
       running = true;
@@ -743,7 +904,7 @@
       startNotifUpdates();
       playIcon.style.display = 'none';
       pauseIcon.style.display = '';
-      playBtn.setAttribute('aria-label', 'השהיה');
+      playBtn.setAttribute('aria-label', t('ariaPause'));
     }
     render();
     saveState();
@@ -765,7 +926,7 @@
     closeNotification();
     playIcon.style.display = '';
     pauseIcon.style.display = 'none';
-    playBtn.setAttribute('aria-label', 'התחלה');
+    playBtn.setAttribute('aria-label', t('ariaStart'));
     render();
     saveState();
   });
@@ -774,12 +935,12 @@
   function renderTitleDisplay() {
     titleWrap.innerHTML = currentTitle
       ? `<button class="title-btn" id="titleBtnEl">${escapeHtml(currentTitle)}</button>`
-      : `<button class="title-btn" id="titleBtnEl"><span class="placeholder">מה המשימה? (לחצו להוספת כותרת)</span></button>`;
+      : `<button class="title-btn" id="titleBtnEl"><span class="placeholder">${escapeHtml(t('titlePlaceholder'))}</span></button>`;
     document.getElementById('titleBtnEl').addEventListener('click', enterTitleEdit);
   }
 
   function enterTitleEdit() {
-    titleWrap.innerHTML = `<input class="title-input" id="titleInput" placeholder="לצאת להליכה בשכונה" value="${escapeHtml(currentTitle)}" />`;
+    titleWrap.innerHTML = `<input class="title-input" id="titleInput" placeholder="${escapeHtml(t('titleInputPlaceholder'))}" value="${escapeHtml(currentTitle)}" />`;
     const input = document.getElementById('titleInput');
     input.focus();
     input.addEventListener('blur', commitTitle);
@@ -805,7 +966,7 @@
   function commitGoal() {
     const val = Number(goalInput.value);
     minMinutes = val > 0 ? val : 1;
-    goalBtn.textContent = `${minMinutes} דקות`;
+    goalBtn.textContent = t('goalUnit', minMinutes);
     goalInput.style.display = 'none';
     goalBtn.style.display = '';
     render();
@@ -839,7 +1000,7 @@
 
       currentTitle = s.title || '';
       minMinutes = s.minMinutes > 0 ? s.minMinutes : 5;
-      goalBtn.textContent = `${minMinutes} דקות`;
+      goalBtn.textContent = t('goalUnit', minMinutes);
 
       if (s.running && s.startTs) {
         baseMs = s.baseMs || 0;
@@ -849,7 +1010,7 @@
         startRaf();
         playIcon.style.display = 'none';
         pauseIcon.style.display = '';
-        playBtn.setAttribute('aria-label', 'השהיה');
+        playBtn.setAttribute('aria-label', t('ariaPause'));
         // Resume notification updates only if permission was already granted;
         // never re-prompt automatically.
         if (notifPermission === 'granted') startNotifUpdates();
@@ -889,7 +1050,7 @@
     const now = new Date();
     list.push({
       date: dateKeyOf(now),
-      title: (title && title.trim()) || 'ללא כותרת',
+      title: (title && title.trim()) || '',
       durationMs,
       completedAt: now.getTime(),
     });
@@ -901,16 +1062,16 @@
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayKey = dateKeyOf(yesterday);
-    if (dateKey === todayKey) return 'היום';
-    if (dateKey === yesterdayKey) return 'אתמול';
+    if (dateKey === todayKey) return t('today');
+    if (dateKey === yesterdayKey) return t('yesterday');
     const d = new Date(dateKey + 'T00:00:00');
-    return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString(t('dateLocale'), { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   function renderAchievements() {
     const list = loadAchievements();
     if (list.length === 0) {
-      achvBody.innerHTML = '<p class="achv-empty">אין עדיין הישגים. התחילו סטופר והגיעו ליעד כדי לראות אותו כאן 🎯</p>';
+      achvBody.innerHTML = `<p class="achv-empty">${t('achvEmpty')}</p>`;
       return;
     }
 
@@ -929,8 +1090,9 @@
       html += `<div class="achv-day"><div class="achv-day-title">${dayLabel(dateKey)}</div><div>`;
       const tasks = Object.entries(byDate[dateKey]).sort((a, b) => b[1].totalMs - a[1].totalMs);
       tasks.forEach(([title, info]) => {
-        const countLabel = info.count > 1 ? ` · ${info.count} סבבים` : '';
-        html += `<div class="achv-task-row"><span class="achv-task-title">${escapeHtml(title)}</span><span class="achv-task-time">${formatElapsedNoCentis(info.totalMs)}${countLabel}</span></div>`;
+        const countLabel = info.count > 1 ? t('roundsSuffix', info.count) : '';
+        const displayTitle = title || t('noTitle');
+        html += `<div class="achv-task-row"><span class="achv-task-title">${escapeHtml(displayTitle)}</span><span class="achv-task-time">${formatElapsedNoCentis(info.totalMs)}${countLabel}</span></div>`;
       });
       html += '</div></div>';
     });
@@ -948,7 +1110,7 @@
 
   // ---- Force refresh (clears SW + HTTP/Cache Storage caching, never touches localStorage) ----
   async function forceRefresh() {
-    refreshBtnText.textContent = '🔄 מרענן...';
+    refreshBtnText.textContent = t('refreshing');
     refreshBtn.disabled = true;
 
     try {
@@ -982,8 +1144,7 @@
 
   // ---- Init ----
   loadState();
-  renderTitleDisplay();
-  render();
+  applyLanguage(currentLang, { skipSave: true });
 </script>
 </body>
 </html>
