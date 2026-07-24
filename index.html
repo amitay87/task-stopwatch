@@ -429,6 +429,11 @@
         <span id="testNotifBtnText">שליחת התראת בדיקה עכשיו</span>
       </button>
     </div>
+    <div class="notif-row" style="border-top:none; padding-top:0; margin-top:0.4rem;">
+      <button class="notif-btn" id="refreshBtn">
+        <span id="refreshBtnText">🔄 טעינת הגרסה העדכנית ביותר</span>
+      </button>
+    </div>
   </div>
 
   <p class="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.</p>
@@ -460,6 +465,8 @@
   const notifBtn = document.getElementById('notifBtn');
   const notifBtnText = document.getElementById('notifBtnText');
   const testNotifBtn = document.getElementById('testNotifBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshBtnText = document.getElementById('refreshBtnText');
   const achvPanel = document.getElementById('achvPanel');
   const achvToggleBtn = document.getElementById('achvToggleBtn');
   const achvBody = document.getElementById('achvBody');
@@ -933,6 +940,40 @@
   }
 
   achvToggleBtn.addEventListener('click', toggleAchievements);
+
+  // ---- Force refresh (clears SW + HTTP/Cache Storage caching, never touches localStorage) ----
+  async function forceRefresh() {
+    refreshBtnText.textContent = '🔄 מרענן...';
+    refreshBtn.disabled = true;
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((reg) => reg.unregister()));
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      // Best-effort: force the browser to revalidate these files over the network.
+      await fetch('sw.js', { cache: 'reload' });
+      await fetch(location.pathname, { cache: 'reload' });
+    } catch (e) { /* ignore */ }
+
+    // Cache-bust the navigation itself. This does not touch localStorage,
+    // which is scoped to the origin regardless of query string.
+    const url = new URL(location.href);
+    url.searchParams.set('v', Date.now().toString());
+    location.href = url.toString();
+  }
+
+  refreshBtn.addEventListener('click', forceRefresh);
 
   // ---- Init ----
   loadState();
