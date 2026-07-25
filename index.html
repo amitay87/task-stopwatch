@@ -1906,11 +1906,19 @@
   // ---- Floating window (Picture-in-Picture via canvas -> video trick) ----
   // Document PiP (interactive HTML) isn't supported on Android; classic <video>
   // PiP is. So we draw the stopwatch onto a canvas, stream it into a hidden
-  // <video>, and put THAT into PiP. It's read-only (no buttons inside it),
-  // but it keeps visibly updating while the browser is minimized/backgrounded.
+  // <video>, and put THAT into PiP. It's read-only (no buttons inside it).
+  //
+  // On Android, a plain setInterval/rAF redraw loop gets throttled to a stop
+  // within about a second once the browser app itself is backgrounded, which
+  // freezes the canvas (and therefore the PiP video). A silent Web Audio
+  // graph is NOT throttled the same way (Chrome treats active audio as a
+  // reason to keep the page's JS running), so we drive the redraw from a
+  // silent audio callback instead of a timer.
   let pipCanvas = null;
   let pipVideo = null;
-  let pipDrawInterval = null;
+  let pipAudioCtx = null;
+  let pipSilentNode = null;
+  let pipLastDrawTs = 0;
 
   function drawPipFrame() {
     if (!pipCanvas) return;
@@ -1937,6 +1945,40 @@
     ctx.fillText(reached ? t('statusReached') : t('statusGoal', minMinutes), w / 2, h * 0.85);
   }
 
+  function startPipKeepAlive() {
+    if (pipAudioCtx) return;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      pipAudioCtx = new Ctx();
+      // A silent, continuously-processing audio node. Its callback keeps
+      // firing even when the browser app is backgrounded on Android.
+      pipSilentNode = pipAudioCtx.createScriptProcessor(4096, 1, 1);
+      const silentGain = pipAudioCtx.createGain();
+      silentGain.gain.value = 0;
+      pipSilentNode.connect(silentGain);
+      silentGain.connect(pipAudioCtx.destination);
+      pipSilentNode.onaudioprocess = () => {
+        const now = Date.now();
+        if (now - pipLastDrawTs >= 500) {
+          pipLastDrawTs = now;
+          drawPipFrame();
+        }
+      };
+    } catch (e) { /* fall back silently; the initial static frame will just stay frozen */ }
+  }
+
+  function stopPipKeepAlive() {
+    if (pipSilentNode) {
+      pipSilentNode.disconnect();
+      pipSilentNode.onaudioprocess = null;
+      pipSilentNode = null;
+    }
+    if (pipAudioCtx) {
+      pipAudioCtx.close().catch(() => {});
+      pipAudioCtx = null;
+    }
+  }
+
   async function togglePip() {
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
@@ -1956,16 +1998,12 @@
         pipVideo.playsInline = true;
         pipVideo.style.display = 'none';
         document.body.appendChild(pipVideo);
-        pipVideo.addEventListener('leavepictureinpicture', () => {
-          clearInterval(pipDrawInterval);
-          pipDrawInterval = null;
-        });
+        pipVideo.addEventListener('leavepictureinpicture', stopPipKeepAlive);
       }
       drawPipFrame();
       pipVideo.srcObject = pipCanvas.captureStream();
       await pipVideo.play();
-      clearInterval(pipDrawInterval);
-      pipDrawInterval = setInterval(drawPipFrame, 500);
+      startPipKeepAlive();
       await pipVideo.requestPictureInPicture();
     } catch (e) {
       alert(t('pipUnsupported'));
