@@ -68,6 +68,7 @@
   }
 
   .card {
+    position: relative;
     border-radius: 1.5rem;
     padding: 2rem;
     box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.3);
@@ -78,6 +79,71 @@
   .card.reached {
     background: var(--card-bg-reached);
     border-color: var(--card-border-reached);
+  }
+
+  .chain-quickswitch {
+    position: absolute;
+    top: 1rem;
+    inset-inline-end: 1rem;
+    z-index: 5;
+  }
+  .chain-quick-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 1px solid var(--input-border);
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .chain-quick-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .chain-quick-btn[aria-expanded="true"] { color: var(--amber); border-color: var(--amber); }
+
+  .chain-quick-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    inset-inline-end: 0;
+    min-width: 12rem;
+    max-width: 16rem;
+    max-height: 16rem;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 20px -5px rgba(0,0,0,0.4);
+    padding: 0.4rem;
+  }
+  .chain-quick-item {
+    display: block;
+    width: 100%;
+    text-align: start;
+    background: none;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .chain-quick-item:hover { background: var(--track-bg); color: var(--amber); }
+  .chain-quick-empty {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    padding: 0.5rem 0.6rem;
+    margin: 0;
+  }
+  .chain-quick-empty a {
+    color: var(--amber);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
   }
 
   /* Title */
@@ -236,6 +302,31 @@
     padding: 0.125rem 0;
     font-family: inherit;
     font-size: 0.875rem;
+  }
+  .goal-step-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--input-border);
+    background: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .goal-step-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+  .two-min-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--amber);
+    margin-top: 0.6rem;
   }
 
   .footnote {
@@ -672,6 +763,12 @@
 
   <div class="wrap">
     <div class="card" id="card">
+      <!-- Chain quick-switch dropdown -->
+      <div class="chain-quickswitch" id="chainQuickSwitch">
+        <button class="chain-quick-btn" id="chainQuickBtn" type="button" aria-haspopup="true" aria-expanded="false">🔗</button>
+        <div class="chain-quick-menu" id="chainQuickMenu" style="display:none;"></div>
+      </div>
+
       <!-- Active chain badge -->
       <div class="chain-badge" id="chainBadge" style="display:none;">
         <span id="chainBadgeText"></span>
@@ -720,9 +817,14 @@
     <!-- Goal setting -->
     <div class="goal-row">
       <span id="goalLabel">זמן מינימלי להתמקדות:</span>
+      <button class="goal-step-btn" id="goalMinusBtn" type="button" aria-label="-">－</button>
       <button class="goal-btn" id="goalBtn">5 דקות</button>
       <input class="goal-input" id="goalInput" type="number" min="1" value="5" style="display:none;" />
+      <button class="goal-step-btn" id="goalPlusBtn" type="button" aria-label="+">＋</button>
     </div>
+
+    <!-- Two-minute-rule hint (shown only on the first task of an active chain) -->
+    <div class="two-min-hint" id="twoMinHint" style="display:none;"></div>
 
     <!-- Notifications -->
     <div class="notif-row">
@@ -743,7 +845,7 @@
     </div>
   </div>
 
-  <p class="footnote" id="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.</p>
+  <p class="footnote" id="footnote">הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.</p>
 
   <div class="kofi-row">
     <a href='https://ko-fi.com/V0E223RQBR' target='_blank' rel='noopener noreferrer'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
@@ -781,6 +883,9 @@
   const titleWrap = document.getElementById('titleWrap');
   const goalBtn = document.getElementById('goalBtn');
   const goalInput = document.getElementById('goalInput');
+  const goalMinusBtn = document.getElementById('goalMinusBtn');
+  const goalPlusBtn = document.getElementById('goalPlusBtn');
+  const twoMinHint = document.getElementById('twoMinHint');
   const notifBtn = document.getElementById('notifBtn');
   const notifBtnText = document.getElementById('notifBtnText');
   const testNotifBtn = document.getElementById('testNotifBtn');
@@ -804,6 +909,9 @@
   const chainSaveBtn = document.getElementById('chainSaveBtn');
   const chainSaveText = document.getElementById('chainSaveText');
   const chainsList = document.getElementById('chainsList');
+  const chainQuickSwitch = document.getElementById('chainQuickSwitch');
+  const chainQuickBtn = document.getElementById('chainQuickBtn');
+  const chainQuickMenu = document.getElementById('chainQuickMenu');
   const chainBadge = document.getElementById('chainBadge');
   const chainBadgeText = document.getElementById('chainBadgeText');
   const chainBadgeCancelBtn = document.getElementById('chainBadgeCancelBtn');
@@ -844,7 +952,7 @@
       testNotifBtn: 'שליחת התראת בדיקה עכשיו',
       refreshBtn: '🔄 טעינת הגרסה העדכנית ביותר',
       refreshing: '🔄 מרענן...',
-      footnote: 'הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.<br>יש לשמור את קובץ sw.js באותה תיקייה כמו קובץ ה-HTML.',
+      footnote: 'הסטופר רץ קדימה ולא מצלצל — הוא רק מתחלף לירוק כשעברתם את היעד, וממשיך לרוץ.<br>ההתראות דורשות אישור חד-פעמי מהדפדפן, ומתעדכנות כל כמה שניות בזמן ריצה.',
       achvHeader: '🏆 הישגים',
       achvEmpty: 'אין עדיין הישגים. התחילו סטופר והגיעו ליעד כדי לראות אותו כאן 🎯',
       today: 'היום',
@@ -875,6 +983,9 @@
       chainCancelAria: 'ביטול שירשור פעיל',
       chainCompleteMessage: (name) => `סיימת את כל המשימות בשירשור "${name}"! 🎉`,
       confettiCloseBtn: 'סגירה',
+      twoMinHint: '💡 כלל שתי הדקות: המטרה היא רק להתחיל',
+      chainQuickAria: 'בחירת שירשור מהיר',
+      chainQuickEmpty: 'אין עדיין שירשורים. מוזמנים ליצור את השירשור/השגרה הראשונה שלכם <a href="#" id="chainQuickCreateLink">פה</a>.',
     },
     en: {
       pageTitle: 'Focus Stopwatch',
@@ -894,7 +1005,7 @@
       testNotifBtn: 'Send a test notification now',
       refreshBtn: '🔄 Load the latest version',
       refreshing: '🔄 Refreshing...',
-      footnote: "The stopwatch counts up and never rings — it just turns green once you pass the goal, and keeps running.<br>Notifications need one-time browser permission, and update every few seconds while running.<br>Keep the sw.js file in the same folder as the HTML file.",
+      footnote: "The stopwatch counts up and never rings — it just turns green once you pass the goal, and keeps running.<br>Notifications need one-time browser permission, and update every few seconds while running.",
       achvHeader: '🏆 Achievements',
       achvEmpty: 'No achievements yet. Start a session and hit your goal to see it here 🎯',
       today: 'Today',
@@ -925,6 +1036,9 @@
       chainCancelAria: 'Cancel active chain',
       chainCompleteMessage: (name) => `You completed every task in "${name}"! 🎉`,
       confettiCloseBtn: 'Close',
+      twoMinHint: "💡 Two-minute rule: the goal is just to start",
+      chainQuickAria: 'Quick chain switch',
+      chainQuickEmpty: 'No chains yet. Feel free to create your first chain/routine <a href="#" id="chainQuickCreateLink">here</a>.',
     },
   };
 
@@ -980,6 +1094,7 @@
     chainNextBtnText.textContent = t('chainNextTask');
     chainBadgeCancelBtn.setAttribute('aria-label', t('chainCancelAria'));
     confettiCloseBtn.textContent = t('confettiCloseBtn');
+    chainQuickBtn.setAttribute('aria-label', t('chainQuickAria'));
 
     resetBtn.setAttribute('aria-label', t('ariaReset'));
     playBtn.setAttribute('aria-label', running ? t('ariaPause') : t('ariaStart'));
@@ -989,6 +1104,7 @@
     render();
     if (achvPanel.classList.contains('open')) renderAchievements();
     if (chainPanel.classList.contains('open')) renderChainsList();
+    if (chainQuickMenu.style.display === 'block') renderChainQuickMenu();
     updateChainBadge();
     updateChainNextBtn();
   }
@@ -1327,6 +1443,16 @@
   goalInput.addEventListener('blur', commitGoal);
   goalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') goalInput.blur(); });
 
+  function adjustGoal(delta) {
+    minMinutes = Math.max(1, minMinutes + delta);
+    goalBtn.textContent = t('goalUnit', minMinutes);
+    render();
+    saveState();
+  }
+
+  goalMinusBtn.addEventListener('click', () => adjustGoal(-1));
+  goalPlusBtn.addEventListener('click', () => adjustGoal(1));
+
   // ---- Session persistence (survives reload / long inactivity) ----
   const STATE_KEY = 'focusStopwatch_state_v1';
 
@@ -1339,6 +1465,7 @@
         startTs,
         baseMs,
         activeChain,
+        preChainMinMinutes,
       }));
     } catch (e) { /* storage unavailable; ignore */ }
   }
@@ -1352,6 +1479,10 @@
       currentTitle = s.title || '';
       minMinutes = s.minMinutes > 0 ? s.minMinutes : 5;
       goalBtn.textContent = t('goalUnit', minMinutes);
+
+      if (typeof s.preChainMinMinutes === 'number') {
+        preChainMinMinutes = s.preChainMinMinutes;
+      }
 
       if (s.activeChain && s.activeChain.chainId) {
         activeChain = s.activeChain;
@@ -1572,14 +1703,20 @@
     return loadChains().find((c) => c.id === id) || null;
   }
 
+  const TWO_MINUTE_RULE_MINUTES = 2;
+  let preChainMinMinutes = null; // the user's normal goal, saved while the 2-min override is active
+
   function updateChainBadge() {
     const chain = activeChain && getChainById(activeChain.chainId);
     if (!chain) {
       chainBadge.style.display = 'none';
+      twoMinHint.style.display = 'none';
       return;
     }
     chainBadgeText.textContent = `🔗 ${chain.name} · ${activeChain.stepIndex + 1}/${chain.steps.length}`;
     chainBadge.style.display = 'flex';
+    twoMinHint.style.display = (activeChain.stepIndex === 0) ? 'block' : 'none';
+    twoMinHint.textContent = t('twoMinHint');
   }
 
   function updateChainNextBtn() {
@@ -1601,6 +1738,20 @@
     elapsedMs = 0;
   }
 
+  function applyTwoMinuteRule() {
+    if (preChainMinMinutes === null) preChainMinMinutes = minMinutes;
+    minMinutes = TWO_MINUTE_RULE_MINUTES;
+    goalBtn.textContent = t('goalUnit', minMinutes);
+  }
+
+  function restoreNormalGoalIfNeeded() {
+    if (preChainMinMinutes !== null) {
+      minMinutes = preChainMinMinutes;
+      preChainMinMinutes = null;
+      goalBtn.textContent = t('goalUnit', minMinutes);
+    }
+  }
+
   function loadActiveChainStep() {
     const chain = activeChain && getChainById(activeChain.chainId);
     if (!chain) { activeChain = null; updateChainBadge(); updateChainNextBtn(); return; }
@@ -1617,13 +1768,16 @@
     const chain = getChainById(chainId);
     if (!chain || !chain.steps.length) return;
     activeChain = { chainId, stepIndex: 0 };
+    applyTwoMinuteRule();
     loadActiveChainStep();
   }
 
   function clearActiveChain() {
     activeChain = null;
+    restoreNormalGoalIfNeeded();
     updateChainBadge();
     updateChainNextBtn();
+    render();
     saveState();
   }
 
@@ -1631,17 +1785,75 @@
     if (!activeChain) return;
     const chain = getChainById(activeChain.chainId);
     if (!chain) { clearActiveChain(); return; }
+    const wasFirstStep = activeChain.stepIndex === 0;
     activeChain.stepIndex += 1;
     if (activeChain.stepIndex >= chain.steps.length) {
       celebrateChainComplete(chain.name);
       clearActiveChain();
     } else {
+      if (wasFirstStep) restoreNormalGoalIfNeeded();
       loadActiveChainStep();
     }
   }
 
   chainBadgeCancelBtn.addEventListener('click', clearActiveChain);
   chainNextBtn.addEventListener('click', advanceChainStep);
+
+  // ---- Chain quick-switch dropdown (top-right of the main card) ----
+  function renderChainQuickMenu() {
+    const list = loadChains();
+    if (list.length === 0) {
+      chainQuickMenu.innerHTML = `<p class="chain-quick-empty">${t('chainQuickEmpty')}</p>`;
+      const link = document.getElementById('chainQuickCreateLink');
+      if (link) {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          closeChainQuickMenu();
+          if (!chainPanel.classList.contains('open')) toggleChainPanel();
+          chainPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+    } else {
+      let html = '';
+      list.forEach((chain) => {
+        html += `<button class="chain-quick-item" data-id="${chain.id}">${escapeHtml(chain.name)}</button>`;
+      });
+      chainQuickMenu.innerHTML = html;
+      chainQuickMenu.querySelectorAll('.chain-quick-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activateChain(btn.dataset.id);
+          closeChainQuickMenu();
+        });
+      });
+    }
+  }
+
+  function openChainQuickMenu() {
+    renderChainQuickMenu();
+    chainQuickMenu.style.display = 'block';
+    chainQuickBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeChainQuickMenu() {
+    chainQuickMenu.style.display = 'none';
+    chainQuickBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleChainQuickMenu() {
+    if (chainQuickMenu.style.display === 'block') closeChainQuickMenu();
+    else openChainQuickMenu();
+  }
+
+  chainQuickBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleChainQuickMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!chainQuickSwitch.contains(e.target)) closeChainQuickMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeChainQuickMenu();
+  });
 
   // ---- Celebration (confetti) ----
   let confettiAutoCloseTimer = null;
