@@ -806,7 +806,9 @@
         <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
       </button>
 
-      <div class="icon-btn spacer"></div>
+      <button class="icon-btn" id="pipBtn" type="button" aria-label="מצב צף">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="12" width="8" height="6" rx="1" fill="currentColor"/></svg>
+      </button>
     </div>
 
     <!-- Next task in chain (shown only while paused with an active chain) -->
@@ -921,6 +923,7 @@
   const confettiContainer = document.getElementById('confettiContainer');
   const confettiMessageText = document.getElementById('confettiMessageText');
   const confettiCloseBtn = document.getElementById('confettiCloseBtn');
+  const pipBtn = document.getElementById('pipBtn');
 
   let currentTitle = ''; // canonical source of truth for the task title
 
@@ -969,6 +972,8 @@
       alertUnsupported: 'הדפדפן הזה לא תומך בהתראות בכלל.',
       alertNeedPermission: 'אין עדיין הרשאה. לחצו קודם על "הפעלת התראות".',
       alertPermissionBlocked: 'ההתראות חסומות עבור האתר הזה (כנראה מניסיון קודם). כדי לאפשר אותן: לחצו על סמל המנעול/ה-i ליד שורת הכתובת ← הרשאות ← התראות ← שנו ל"אפשר", ואז רעננו את הדף.',
+      pipAria: 'מצב צף (תמונה בתוך תמונה)',
+      pipUnsupported: 'מצב צף אינו נתמך בדפדפן הזה.',
       alertShowError: (msg) => `שגיאה בהצגת ההתראה: ${msg}`,
       dateLocale: 'he-IL',
       chainHeader: '🔗 שירשור משימות',
@@ -1023,6 +1028,8 @@
       alertUnsupported: "This browser doesn't support notifications at all.",
       alertNeedPermission: 'No permission yet. Tap "Enable notifications" first.',
       alertPermissionBlocked: 'Notifications are blocked for this site (likely from an earlier attempt). To allow them: tap the lock/i icon next to the address bar → Permissions → Notifications → set to "Allow", then reload the page.',
+      pipAria: 'Floating window (picture-in-picture)',
+      pipUnsupported: "Floating window isn't supported in this browser.",
       alertShowError: (msg) => `Error showing notification: ${msg}`,
       dateLocale: 'en-US',
       chainHeader: '🔗 Habit Stacking',
@@ -1097,6 +1104,7 @@
     chainBadgeCancelBtn.setAttribute('aria-label', t('chainCancelAria'));
     confettiCloseBtn.textContent = t('confettiCloseBtn');
     chainQuickBtn.setAttribute('aria-label', t('chainQuickAria'));
+    pipBtn.setAttribute('aria-label', t('pipAria'));
 
     resetBtn.setAttribute('aria-label', t('ariaReset'));
     playBtn.setAttribute('aria-label', running ? t('ariaPause') : t('ariaStart'));
@@ -1894,6 +1902,78 @@
 
   confettiOverlay.addEventListener('click', closeCelebration);
   confettiCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCelebration(); });
+
+  // ---- Floating window (Picture-in-Picture via canvas -> video trick) ----
+  // Document PiP (interactive HTML) isn't supported on Android; classic <video>
+  // PiP is. So we draw the stopwatch onto a canvas, stream it into a hidden
+  // <video>, and put THAT into PiP. It's read-only (no buttons inside it),
+  // but it keeps visibly updating while the browser is minimized/backgrounded.
+  let pipCanvas = null;
+  let pipVideo = null;
+  let pipDrawInterval = null;
+
+  function drawPipFrame() {
+    if (!pipCanvas) return;
+    const ctx = pipCanvas.getContext('2d');
+    const w = pipCanvas.width, h = pipCanvas.height;
+    const reached = elapsedMs >= goalMs();
+
+    ctx.fillStyle = reached ? '#1E2A24' : '#232730';
+    ctx.fillRect(0, 0, w, h);
+
+    const title = (currentTitle && currentTitle.trim()) || t('defaultTaskTitle');
+    ctx.fillStyle = '#8B92A3';
+    ctx.font = '600 22px Heebo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title.length > 28 ? title.slice(0, 27) + '…' : title, w / 2, h * 0.28);
+
+    ctx.fillStyle = reached ? '#5FCF94' : '#E8A33D';
+    ctx.font = '700 64px "JetBrains Mono", monospace';
+    ctx.fillText(formatElapsedNoCentis(elapsedMs), w / 2, h * 0.58);
+
+    ctx.fillStyle = reached ? '#5FCF94' : '#8B92A3';
+    ctx.font = '500 18px Heebo, sans-serif';
+    ctx.fillText(reached ? t('statusReached') : t('statusGoal', minMinutes), w / 2, h * 0.85);
+  }
+
+  async function togglePip() {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+      return;
+    }
+    if (!('pictureInPictureEnabled' in document) || !document.pictureInPictureEnabled) {
+      alert(t('pipUnsupported'));
+      return;
+    }
+    try {
+      if (!pipCanvas) {
+        pipCanvas = document.createElement('canvas');
+        pipCanvas.width = 400;
+        pipCanvas.height = 220;
+        pipVideo = document.createElement('video');
+        pipVideo.muted = true;
+        pipVideo.playsInline = true;
+        pipVideo.style.display = 'none';
+        document.body.appendChild(pipVideo);
+        pipVideo.addEventListener('leavepictureinpicture', () => {
+          clearInterval(pipDrawInterval);
+          pipDrawInterval = null;
+        });
+      }
+      drawPipFrame();
+      pipVideo.srcObject = pipCanvas.captureStream();
+      await pipVideo.play();
+      clearInterval(pipDrawInterval);
+      pipDrawInterval = setInterval(drawPipFrame, 500);
+      await pipVideo.requestPictureInPicture();
+    } catch (e) {
+      alert(t('pipUnsupported'));
+    }
+  }
+
+  pipBtn.addEventListener('click', togglePip);
+
 
 
   // ---- Force refresh (clears SW + HTTP/Cache Storage caching, never touches localStorage) ----
