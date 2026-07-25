@@ -296,9 +296,15 @@
     max-width: 24rem;
     align-items: stretch;
   }
-  /* Mobile: stopwatch first, achievements panel below it */
+  .side-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+  /* Mobile: stopwatch first, then the side panels below it */
   .wrap { order: 1; }
-  .achv-panel { order: 2; }
+  .side-panels { order: 2; }
 
   @media (min-width: 860px) {
     .layout {
@@ -308,9 +314,9 @@
       max-width: 52rem;
       gap: 1.5rem;
     }
-    /* Desktop: reset order so DOM order applies (achv-panel first = right side in RTL) */
+    /* Desktop: reset order so DOM order applies (side panels first = right side in RTL) */
     .wrap { order: 0; flex: 0 0 24rem; max-width: 24rem; }
-    .achv-panel { order: 0; flex: 0 0 20rem; max-width: 20rem; }
+    .side-panels { order: 0; flex: 0 0 20rem; max-width: 20rem; }
   }
 
   /* Achievements panel (collapsible, not a popup) */
@@ -391,6 +397,228 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
+
+  /* Chain panel (habit stacking) — reuses achv-panel/-header/-chevron/-body/-inner/-empty classes */
+  .chain-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .chain-name-input,
+  .chain-step-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--input-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.88rem;
+    outline: none;
+  }
+  .chain-name-input::placeholder,
+  .chain-step-input::placeholder { color: var(--text-faint); }
+  .chain-name-input { font-weight: 600; }
+
+  .chain-steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .chain-form-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.2rem;
+  }
+  .chain-add-step-btn {
+    background: none;
+    border: 1px dashed var(--input-border);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.7rem;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .chain-add-step-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+  .chain-save-btn {
+    background: var(--amber);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    color: var(--bg);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .chain-save-btn:hover { background: var(--amber-hover); }
+
+  .chain-card {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .chain-card:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+  .chain-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .chain-card-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+  .chain-card-name-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+    padding: 0;
+    text-align: start;
+  }
+  .chain-card-name-btn:hover { color: var(--amber); }
+  .chain-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 0.15rem 0.4rem;
+    line-height: 1;
+  }
+  .chain-delete-btn:hover { color: var(--green); }
+
+  .chain-step-row {
+    background: var(--bg);
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+  .chain-arrow {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  /* Active chain badge */
+  .chain-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--bg);
+    border: 1px solid var(--input-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.4rem 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    width: fit-content;
+    margin: 0 auto 0.85rem;
+  }
+  .chain-badge-cancel {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0.1rem 0.3rem;
+  }
+  .chain-badge-cancel:hover { color: var(--green); }
+
+  /* Next task in chain button */
+  .chain-next-btn {
+    display: block;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    border-radius: 0.7rem;
+    padding: 0.6rem 1rem;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1.25rem;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .chain-next-btn:hover { background: var(--amber); color: var(--bg); }
+
+  /* Celebration overlay */
+  .confetti-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.55);
+    overflow: hidden;
+  }
+  .confetti-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: -12px;
+    width: 8px;
+    height: 14px;
+    opacity: 0.9;
+    animation-name: confetti-fall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  @keyframes confetti-fall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0.4; }
+  }
+  .confetti-message {
+    position: relative;
+    z-index: 2;
+    background: var(--card-bg-reached);
+    border: 1px solid var(--card-border-reached);
+    border-radius: 1.25rem;
+    padding: 2rem 1.75rem;
+    text-align: center;
+    max-width: 20rem;
+  }
+  .confetti-message-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+  }
+  .confetti-close-btn {
+    background: var(--green);
+    border: none;
+    border-radius: 999px;
+    padding: 0.5rem 1.4rem;
+    color: var(--bg);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
 </style>
 
 <!-- GoatCounter: privacy-friendly, cookie-less analytics -->
@@ -407,18 +635,49 @@
 </div>
 
 <div class="layout">
-  <div class="achv-panel" id="achvPanel">
-    <button class="achv-panel-header" id="achvToggleBtn">
-      <span id="achvHeaderText">🏆 הישגים</span>
-      <svg class="achv-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="achv-panel-body">
-      <div class="achv-panel-inner" id="achvBody"></div>
+  <div class="side-panels">
+    <div class="chain-panel achv-panel" id="chainPanel">
+      <button class="achv-panel-header" id="chainToggleBtn">
+        <span id="chainHeaderText">🔗 שירשור משימות</span>
+        <svg class="achv-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="achv-panel-body">
+        <div class="achv-panel-inner">
+          <div class="chain-form">
+            <input class="chain-name-input" id="chainNameInput" type="text" placeholder="שם השירשור (למשל: שגרת בוקר)" />
+            <div class="chain-steps-container" id="chainStepsContainer">
+              <input class="chain-step-input" type="text" placeholder="משימה ראשונה (למשל: להתאמן)" />
+              <input class="chain-step-input" type="text" placeholder="המשימה הבאה" />
+            </div>
+            <div class="chain-form-buttons">
+              <button class="chain-add-step-btn" id="chainAddStepBtn" type="button">＋ <span id="chainAddStepText">הוספת משימה</span></button>
+              <button class="chain-save-btn" id="chainSaveBtn" type="button"><span id="chainSaveText">שמירת שירשור</span></button>
+            </div>
+          </div>
+          <div id="chainsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="achv-panel" id="achvPanel">
+      <button class="achv-panel-header" id="achvToggleBtn">
+        <span id="achvHeaderText">🏆 הישגים</span>
+        <svg class="achv-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="achv-panel-body">
+        <div class="achv-panel-inner" id="achvBody"></div>
+      </div>
     </div>
   </div>
 
   <div class="wrap">
     <div class="card" id="card">
+      <!-- Active chain badge -->
+      <div class="chain-badge" id="chainBadge" style="display:none;">
+        <span id="chainBadgeText"></span>
+        <button class="chain-badge-cancel" id="chainBadgeCancelBtn" type="button">✕</button>
+      </div>
+
       <!-- Title -->
       <div class="title-wrap" id="titleWrap">
         <button class="title-btn" id="titleBtn">
@@ -453,6 +712,11 @@
       <div class="icon-btn spacer"></div>
     </div>
 
+    <!-- Next task in chain (shown only while paused with an active chain) -->
+    <button class="chain-next-btn" id="chainNextBtn" style="display:none;" type="button">
+      <span id="chainNextBtnText"></span>
+    </button>
+
     <!-- Goal setting -->
     <div class="goal-row">
       <span id="goalLabel">זמן מינימלי להתמקדות:</span>
@@ -484,6 +748,14 @@
   <div class="kofi-row">
     <a href='https://ko-fi.com/V0E223RQBR' target='_blank' rel='noopener noreferrer'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
   </div>
+  </div>
+</div>
+
+<div class="confetti-overlay" id="confettiOverlay" style="display:none;">
+  <div class="confetti-container" id="confettiContainer"></div>
+  <div class="confetti-message">
+    <div class="confetti-message-text" id="confettiMessageText"></div>
+    <button class="confetti-close-btn" id="confettiCloseBtn" type="button"></button>
   </div>
 </div>
 
@@ -522,6 +794,25 @@
   const goalLabel = document.getElementById('goalLabel');
   const footnote = document.getElementById('footnote');
   const langSelect = document.getElementById('langSelect');
+  const chainPanel = document.getElementById('chainPanel');
+  const chainToggleBtn = document.getElementById('chainToggleBtn');
+  const chainHeaderText = document.getElementById('chainHeaderText');
+  const chainNameInput = document.getElementById('chainNameInput');
+  const chainStepsContainer = document.getElementById('chainStepsContainer');
+  const chainAddStepBtn = document.getElementById('chainAddStepBtn');
+  const chainAddStepText = document.getElementById('chainAddStepText');
+  const chainSaveBtn = document.getElementById('chainSaveBtn');
+  const chainSaveText = document.getElementById('chainSaveText');
+  const chainsList = document.getElementById('chainsList');
+  const chainBadge = document.getElementById('chainBadge');
+  const chainBadgeText = document.getElementById('chainBadgeText');
+  const chainBadgeCancelBtn = document.getElementById('chainBadgeCancelBtn');
+  const chainNextBtn = document.getElementById('chainNextBtn');
+  const chainNextBtnText = document.getElementById('chainNextBtnText');
+  const confettiOverlay = document.getElementById('confettiOverlay');
+  const confettiContainer = document.getElementById('confettiContainer');
+  const confettiMessageText = document.getElementById('confettiMessageText');
+  const confettiCloseBtn = document.getElementById('confettiCloseBtn');
 
   let currentTitle = ''; // canonical source of truth for the task title
 
@@ -571,6 +862,19 @@
       alertNeedPermission: 'אין עדיין הרשאה. לחצו קודם על "הפעלת התראות".',
       alertShowError: (msg) => `שגיאה בהצגת ההתראה: ${msg}`,
       dateLocale: 'he-IL',
+      chainHeader: '🔗 שירשור משימות',
+      chainNamePlaceholder: 'שם השירשור (למשל: שגרת בוקר)',
+      chainStepPlaceholderFirst: 'משימה ראשונה (למשל: להתאמן)',
+      chainStepPlaceholderNext: 'המשימה הבאה',
+      chainAddStep: 'הוספת משימה',
+      chainSaveBtn: 'שמירת שירשור',
+      chainEmpty: 'עדיין אין שירשורים. הגדירו שירשור ראשון כדי לקשר משימות זו לזו 🔗',
+      chainValidationError: 'יש להזין שם לשירשור ולפחות שתי משימות',
+      chainDeleteAria: 'מחיקת שירשור',
+      chainNextTask: 'מעבר למשימה הבאה בשירשור',
+      chainCancelAria: 'ביטול שירשור פעיל',
+      chainCompleteMessage: (name) => `סיימת את כל המשימות בשירשור "${name}"! 🎉`,
+      confettiCloseBtn: 'סגירה',
     },
     en: {
       pageTitle: 'Focus Stopwatch',
@@ -608,6 +912,19 @@
       alertNeedPermission: 'No permission yet. Tap "Enable notifications" first.',
       alertShowError: (msg) => `Error showing notification: ${msg}`,
       dateLocale: 'en-US',
+      chainHeader: '🔗 Habit Stacking',
+      chainNamePlaceholder: 'Chain name (e.g. Morning routine)',
+      chainStepPlaceholderFirst: 'First task (e.g. Exercise)',
+      chainStepPlaceholderNext: 'Next task',
+      chainAddStep: 'Add task',
+      chainSaveBtn: 'Save chain',
+      chainEmpty: 'No chains yet. Create one to link tasks together 🔗',
+      chainValidationError: 'Please enter a chain name and at least two tasks',
+      chainDeleteAria: 'Delete chain',
+      chainNextTask: 'Move to the next task in the chain',
+      chainCancelAria: 'Cancel active chain',
+      chainCompleteMessage: (name) => `You completed every task in "${name}"! 🎉`,
+      confettiCloseBtn: 'Close',
     },
   };
 
@@ -651,6 +968,19 @@
     testNotifBtnText.textContent = t('testNotifBtn');
     if (!refreshBtn.disabled) refreshBtnText.textContent = t('refreshBtn');
 
+    chainHeaderText.textContent = t('chainHeader');
+    chainAddStepText.textContent = t('chainAddStep');
+    chainSaveText.textContent = t('chainSaveBtn');
+    chainNameInput.placeholder = t('chainNamePlaceholder');
+    const stepInputs = chainStepsContainer.querySelectorAll('.chain-step-input');
+    stepInputs.forEach((el, i) => {
+      el.placeholder = (i === 0) ? t('chainStepPlaceholderFirst') : t('chainStepPlaceholderNext');
+    });
+
+    chainNextBtnText.textContent = t('chainNextTask');
+    chainBadgeCancelBtn.setAttribute('aria-label', t('chainCancelAria'));
+    confettiCloseBtn.textContent = t('confettiCloseBtn');
+
     resetBtn.setAttribute('aria-label', t('ariaReset'));
     playBtn.setAttribute('aria-label', running ? t('ariaPause') : t('ariaStart'));
 
@@ -658,6 +988,9 @@
     updateNotifBtn();
     render();
     if (achvPanel.classList.contains('open')) renderAchievements();
+    if (chainPanel.classList.contains('open')) renderChainsList();
+    updateChainBadge();
+    updateChainNextBtn();
   }
 
   langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
@@ -923,6 +1256,7 @@
     }
     render();
     saveState();
+    updateChainNextBtn();
   });
 
   // Reset
@@ -944,6 +1278,7 @@
     playBtn.setAttribute('aria-label', t('ariaStart'));
     render();
     saveState();
+    updateChainNextBtn();
   });
 
   // Title editing
@@ -1003,6 +1338,7 @@
         running,
         startTs,
         baseMs,
+        activeChain,
       }));
     } catch (e) { /* storage unavailable; ignore */ }
   }
@@ -1016,6 +1352,12 @@
       currentTitle = s.title || '';
       minMinutes = s.minMinutes > 0 ? s.minMinutes : 5;
       goalBtn.textContent = t('goalUnit', minMinutes);
+
+      if (s.activeChain && s.activeChain.chainId) {
+        activeChain = s.activeChain;
+        // If the chain was deleted/edited since, getChainById will return null
+        // and updateChainBadge/updateChainNextBtn (called after init) handle that gracefully.
+      }
 
       if (s.running && s.startTs) {
         baseMs = s.baseMs || 0;
@@ -1122,6 +1464,219 @@
   }
 
   achvToggleBtn.addEventListener('click', toggleAchievements);
+
+  // ---- Chains (habit stacking) ----
+  const CHAINS_KEY = 'focusStopwatch_chains_v1';
+
+  function loadChains() {
+    try {
+      const raw = localStorage.getItem(CHAINS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveChainsList(list) {
+    try { localStorage.setItem(CHAINS_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+  }
+
+  function addChainStepInput() {
+    const input = document.createElement('input');
+    input.className = 'chain-step-input';
+    input.type = 'text';
+    input.placeholder = t('chainStepPlaceholderNext');
+    chainStepsContainer.appendChild(input);
+    input.focus();
+  }
+
+  function resetChainForm() {
+    chainNameInput.value = '';
+    chainStepsContainer.innerHTML = '';
+    const first = document.createElement('input');
+    first.className = 'chain-step-input';
+    first.type = 'text';
+    first.placeholder = t('chainStepPlaceholderFirst');
+    const second = document.createElement('input');
+    second.className = 'chain-step-input';
+    second.type = 'text';
+    second.placeholder = t('chainStepPlaceholderNext');
+    chainStepsContainer.appendChild(first);
+    chainStepsContainer.appendChild(second);
+  }
+
+  function collectChainSteps() {
+    return Array.from(chainStepsContainer.querySelectorAll('.chain-step-input'))
+      .map((el) => el.value.trim())
+      .filter((v) => v.length > 0);
+  }
+
+  function saveNewChain() {
+    const name = chainNameInput.value.trim();
+    const steps = collectChainSteps();
+    if (!name || steps.length < 2) {
+      alert(t('chainValidationError'));
+      return;
+    }
+    const list = loadChains();
+    list.push({ id: Date.now().toString(), name, steps, createdAt: Date.now() });
+    saveChainsList(list);
+    resetChainForm();
+    renderChainsList();
+  }
+
+  function deleteChain(id) {
+    const list = loadChains().filter((c) => c.id !== id);
+    saveChainsList(list);
+    renderChainsList();
+  }
+
+  function renderChainsList() {
+    const list = loadChains();
+    if (list.length === 0) {
+      chainsList.innerHTML = `<p class="achv-empty">${t('chainEmpty')}</p>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach((chain) => {
+      html += `<div class="chain-card"><div class="chain-card-header"><button class="chain-card-name-btn" data-id="${chain.id}">${escapeHtml(chain.name)}</button><button class="chain-delete-btn" data-id="${chain.id}" aria-label="${escapeHtml(t('chainDeleteAria'))}">✕</button></div><div>`;
+      chain.steps.forEach((step, i) => {
+        html += `<div class="chain-step-row">${escapeHtml(step)}</div>`;
+        if (i < chain.steps.length - 1) html += `<div class="chain-arrow">↓</div>`;
+      });
+      html += '</div></div>';
+    });
+
+    chainsList.innerHTML = html;
+    chainsList.querySelectorAll('.chain-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', () => deleteChain(btn.dataset.id));
+    });
+    chainsList.querySelectorAll('.chain-card-name-btn').forEach((btn) => {
+      btn.addEventListener('click', () => activateChain(btn.dataset.id));
+    });
+  }
+
+  function toggleChainPanel() {
+    const willOpen = !chainPanel.classList.contains('open');
+    chainPanel.classList.toggle('open', willOpen);
+    if (willOpen) renderChainsList();
+  }
+
+  chainToggleBtn.addEventListener('click', toggleChainPanel);
+  chainAddStepBtn.addEventListener('click', addChainStepInput);
+  chainSaveBtn.addEventListener('click', saveNewChain);
+
+  // ---- Chain activation (habit stacking runtime) ----
+  let activeChain = null; // { chainId, stepIndex } | null
+
+  function getChainById(id) {
+    return loadChains().find((c) => c.id === id) || null;
+  }
+
+  function updateChainBadge() {
+    const chain = activeChain && getChainById(activeChain.chainId);
+    if (!chain) {
+      chainBadge.style.display = 'none';
+      return;
+    }
+    chainBadgeText.textContent = `🔗 ${chain.name} · ${activeChain.stepIndex + 1}/${chain.steps.length}`;
+    chainBadge.style.display = 'flex';
+  }
+
+  function updateChainNextBtn() {
+    const chain = activeChain && getChainById(activeChain.chainId);
+    chainNextBtn.style.display = (chain && !running) ? 'block' : 'none';
+  }
+
+  function stopStopwatchForChainSwitch() {
+    if (running) {
+      running = false;
+      startTs = null;
+      stopRaf();
+      stopNotifUpdates(true);
+      playIcon.style.display = '';
+      pauseIcon.style.display = 'none';
+      playBtn.setAttribute('aria-label', t('ariaStart'));
+    }
+    baseMs = 0;
+    elapsedMs = 0;
+  }
+
+  function loadActiveChainStep() {
+    const chain = activeChain && getChainById(activeChain.chainId);
+    if (!chain) { activeChain = null; updateChainBadge(); updateChainNextBtn(); return; }
+    stopStopwatchForChainSwitch();
+    currentTitle = chain.steps[activeChain.stepIndex];
+    renderTitleDisplay();
+    render();
+    updateChainBadge();
+    updateChainNextBtn();
+    saveState();
+  }
+
+  function activateChain(chainId) {
+    const chain = getChainById(chainId);
+    if (!chain || !chain.steps.length) return;
+    activeChain = { chainId, stepIndex: 0 };
+    loadActiveChainStep();
+  }
+
+  function clearActiveChain() {
+    activeChain = null;
+    updateChainBadge();
+    updateChainNextBtn();
+    saveState();
+  }
+
+  function advanceChainStep() {
+    if (!activeChain) return;
+    const chain = getChainById(activeChain.chainId);
+    if (!chain) { clearActiveChain(); return; }
+    activeChain.stepIndex += 1;
+    if (activeChain.stepIndex >= chain.steps.length) {
+      celebrateChainComplete(chain.name);
+      clearActiveChain();
+    } else {
+      loadActiveChainStep();
+    }
+  }
+
+  chainBadgeCancelBtn.addEventListener('click', clearActiveChain);
+  chainNextBtn.addEventListener('click', advanceChainStep);
+
+  // ---- Celebration (confetti) ----
+  let confettiAutoCloseTimer = null;
+  const CONFETTI_COLORS = ['#E8A33D', '#5FCF94', '#7DA6E8', '#E87D9E', '#E8E6E1'];
+
+  function generateConfetti(count) {
+    confettiContainer.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = (Math.random() * 100) + '%';
+      piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      piece.style.animationDelay = (Math.random() * 0.6) + 's';
+      confettiContainer.appendChild(piece);
+    }
+  }
+
+  function celebrateChainComplete(chainName) {
+    confettiMessageText.textContent = t('chainCompleteMessage', chainName);
+    confettiOverlay.style.display = 'flex';
+    generateConfetti(60);
+    clearTimeout(confettiAutoCloseTimer);
+    confettiAutoCloseTimer = setTimeout(closeCelebration, 6000);
+  }
+
+  function closeCelebration() {
+    confettiOverlay.style.display = 'none';
+    confettiContainer.innerHTML = '';
+    clearTimeout(confettiAutoCloseTimer);
+  }
+
+  confettiOverlay.addEventListener('click', closeCelebration);
+  confettiCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCelebration(); });
+
 
   // ---- Force refresh (clears SW + HTTP/Cache Storage caching, never touches localStorage) ----
   async function forceRefresh() {
