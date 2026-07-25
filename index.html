@@ -2014,7 +2014,7 @@
     if (pipStream) { pipStream = null; }
   }
 
-  async function togglePip() {
+async function togglePip() {
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
       return;
@@ -2028,6 +2028,10 @@
         pipCanvas = document.createElement('canvas');
         pipCanvas.width = 400;
         pipCanvas.height = 220;
+        
+        // התיקון: אתחול הקונטקסט והכרחת Software Rendering
+        pipCtx = pipCanvas.getContext('2d', { willReadFrequently: true });
+        
         pipVideo = document.createElement('video');
         pipVideo.muted = true;
         pipVideo.playsInline = true;
