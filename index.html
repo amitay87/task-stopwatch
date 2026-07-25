@@ -1922,16 +1922,29 @@
   // <video>, and put THAT into PiP. It's read-only (no buttons inside it).
   //
   // On Android, a plain setInterval/rAF redraw loop gets throttled to a stop
-  // within about a second once the browser app itself is backgrounded, which
-  // freezes the canvas (and therefore the PiP video). A silent Web Audio
-  // graph is NOT throttled the same way (Chrome treats active audio as a
-  // reason to keep the page's JS running), so we drive the redraw from a
-  // silent audio callback instead of a timer.
+  // within about a second once the browser app is backgrounded.
+  //
+  // Key insight: Chrome only exempts a tab from background throttling while it
+  // is producing genuinely AUDIBLE (non-zero) audio. A previous attempt drove
+  // both the audio and the redraw from a ScriptProcessorNode callback — but
+  // that callback runs on the MAIN thread, so once throttling began the buffer
+  // underran, the audio went silent, and the exemption was lost (a circular
+  // failure). An OscillatorNode instead generates its tone on the dedicated
+  // AUDIO thread, independent of the main thread, so it keeps sounding even
+  // during a brief main-thread stall — which is exactly what keeps the tab
+  // un-throttled. We use a near-ultrasonic, extremely quiet tone (inaudible in
+  // practice) purely to hold that exemption.
+  //
+  // Separately, canvas.captureStream() in automatic mode won't push new frames
+  // while the page isn't compositing (backgrounded). So we use captureStream(0)
+  // (manual mode) and explicitly call track.requestFrame() after every draw.
   let pipCanvas = null;
   let pipVideo = null;
+  let pipStream = null;
+  let pipVideoTrack = null;
   let pipAudioCtx = null;
-  let pipSilentNode = null;
-  let pipLastDrawTs = 0;
+  let pipOscillator = null;
+  let pipDrawInterval = null;
 
   function drawPipFrame() {
     if (!pipCanvas) return;
@@ -1958,53 +1971,47 @@
     ctx.fillText(reached ? t('statusReached') : t('statusGoal', minMinutes), w / 2, h * 0.85);
   }
 
+  function renderPipFrame() {
+    drawPipFrame();
+    // Manually push the freshly-drawn frame into the captured stream. This is
+    // required because we created the stream with captureStream(0) (manual),
+    // and it's what makes the PiP video update while backgrounded.
+    if (pipVideoTrack && typeof pipVideoTrack.requestFrame === 'function') {
+      try { pipVideoTrack.requestFrame(); } catch (e) { /* ignore */ }
+    }
+  }
+
   function startPipKeepAlive() {
     if (pipAudioCtx) return;
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       pipAudioCtx = new Ctx();
-      // IMPORTANT: a truly silent (all-zero) signal does NOT exempt a tab
-      // from Chrome's background timer throttling — only genuinely audible
-      // (non-zero) audio does. So instead of gain=0, we generate a real,
-      // extremely quiet, near-ultrasonic tone. It's non-zero at the sample
-      // level (so Chrome treats the page as "playing audio"), but at this
-      // frequency/amplitude it's inaudible on virtually any device.
-      pipSilentNode = pipAudioCtx.createScriptProcessor(4096, 1, 1);
+      pipOscillator = pipAudioCtx.createOscillator();
       const gain = pipAudioCtx.createGain();
-      gain.gain.value = 1;
-      pipSilentNode.connect(gain);
+      pipOscillator.frequency.value = 18500; // near-ultrasonic, inaudible in practice
+      gain.gain.value = 0.001;                // genuinely non-zero, but tiny
+      pipOscillator.connect(gain);
       gain.connect(pipAudioCtx.destination);
-
-      const freq = 18500; // near-ultrasonic; inaudible to virtually all adults
-      const amp = 0.0005; // extremely quiet, but genuinely non-zero
-      let phase = 0;
-      const sr = pipAudioCtx.sampleRate;
-
-      pipSilentNode.onaudioprocess = (e) => {
-        const output = e.outputBuffer.getChannelData(0);
-        for (let i = 0; i < output.length; i++) {
-          output[i] = amp * Math.sin((2 * Math.PI * freq * phase) / sr);
-          phase++;
-        }
-        const now = Date.now();
-        if (now - pipLastDrawTs >= 500) {
-          pipLastDrawTs = now;
-          drawPipFrame();
-        }
-      };
-    } catch (e) { /* fall back silently; the initial static frame will just stay frozen */ }
+      pipOscillator.start();
+      // AudioContext may start suspended; the click that opened PiP is a valid
+      // user gesture, so resume() is allowed here.
+      pipAudioCtx.resume().catch(() => {});
+    } catch (e) { /* if audio fails, PiP still opens but may freeze in background */ }
   }
 
   function stopPipKeepAlive() {
-    if (pipSilentNode) {
-      pipSilentNode.disconnect();
-      pipSilentNode.onaudioprocess = null;
-      pipSilentNode = null;
+    if (pipDrawInterval) { clearInterval(pipDrawInterval); pipDrawInterval = null; }
+    if (pipOscillator) {
+      try { pipOscillator.stop(); } catch (e) {}
+      pipOscillator.disconnect();
+      pipOscillator = null;
     }
     if (pipAudioCtx) {
       pipAudioCtx.close().catch(() => {});
       pipAudioCtx = null;
     }
+    if (pipVideoTrack) { pipVideoTrack = null; }
+    if (pipStream) { pipStream = null; }
   }
 
   async function togglePip() {
@@ -2028,10 +2035,22 @@
         document.body.appendChild(pipVideo);
         pipVideo.addEventListener('leavepictureinpicture', stopPipKeepAlive);
       }
+
       drawPipFrame();
-      pipVideo.srcObject = pipCanvas.captureStream();
+      // Manual-mode capture (0 fps): frames are only produced when we call
+      // requestFrame(), which keeps working while backgrounded.
+      pipStream = pipCanvas.captureStream(0);
+      pipVideoTrack = pipStream.getVideoTracks()[0];
+      if (pipVideoTrack && typeof pipVideoTrack.requestFrame === 'function') {
+        pipVideoTrack.requestFrame();
+      }
+      pipVideo.srcObject = pipStream;
       await pipVideo.play();
+
       startPipKeepAlive();
+      if (pipDrawInterval) clearInterval(pipDrawInterval);
+      pipDrawInterval = setInterval(renderPipFrame, 500);
+
       await pipVideo.requestPictureInPicture();
     } catch (e) {
       alert(t('pipUnsupported'));
@@ -2078,7 +2097,7 @@
 
   // ---- Build info (version + content hash of the served HTML) ----
   // Bump APP_VERSION by hand whenever you make a meaningful change.
-  const APP_VERSION = '1.0.1';
+  const APP_VERSION = '1.0.2';
 
   async function showBuildInfo() {
     try {
