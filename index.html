@@ -1963,14 +1963,29 @@
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       pipAudioCtx = new Ctx();
-      // A silent, continuously-processing audio node. Its callback keeps
-      // firing even when the browser app is backgrounded on Android.
+      // IMPORTANT: a truly silent (all-zero) signal does NOT exempt a tab
+      // from Chrome's background timer throttling — only genuinely audible
+      // (non-zero) audio does. So instead of gain=0, we generate a real,
+      // extremely quiet, near-ultrasonic tone. It's non-zero at the sample
+      // level (so Chrome treats the page as "playing audio"), but at this
+      // frequency/amplitude it's inaudible on virtually any device.
       pipSilentNode = pipAudioCtx.createScriptProcessor(4096, 1, 1);
-      const silentGain = pipAudioCtx.createGain();
-      silentGain.gain.value = 0;
-      pipSilentNode.connect(silentGain);
-      silentGain.connect(pipAudioCtx.destination);
-      pipSilentNode.onaudioprocess = () => {
+      const gain = pipAudioCtx.createGain();
+      gain.gain.value = 1;
+      pipSilentNode.connect(gain);
+      gain.connect(pipAudioCtx.destination);
+
+      const freq = 18500; // near-ultrasonic; inaudible to virtually all adults
+      const amp = 0.0005; // extremely quiet, but genuinely non-zero
+      let phase = 0;
+      const sr = pipAudioCtx.sampleRate;
+
+      pipSilentNode.onaudioprocess = (e) => {
+        const output = e.outputBuffer.getChannelData(0);
+        for (let i = 0; i < output.length; i++) {
+          output[i] = amp * Math.sin((2 * Math.PI * freq * phase) / sr);
+          phase++;
+        }
         const now = Date.now();
         if (now - pipLastDrawTs >= 500) {
           pipLastDrawTs = now;
@@ -2063,7 +2078,7 @@
 
   // ---- Build info (version + content hash of the served HTML) ----
   // Bump APP_VERSION by hand whenever you make a meaningful change.
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.0.1';
 
   async function showBuildInfo() {
     try {
