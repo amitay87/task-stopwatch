@@ -1988,8 +1988,8 @@
       pipAudioCtx = new Ctx();
       pipOscillator = pipAudioCtx.createOscillator();
       const gain = pipAudioCtx.createGain();
-      pipOscillator.frequency.value = 18500; // near-ultrasonic, inaudible in practice
-      gain.gain.value = 0.001;                // genuinely non-zero, but tiny
+      pipOscillator.frequency.value = 440;    // TEST: audible A4 tone (revert to 18500 later)
+      gain.gain.value = 0.05;                 // TEST: audible but not too loud (revert to 0.001 later)
       pipOscillator.connect(gain);
       gain.connect(pipAudioCtx.destination);
       pipOscillator.start();
@@ -2097,7 +2097,7 @@
 
   // ---- Build info (version + content hash of the served HTML) ----
   // Bump APP_VERSION by hand whenever you make a meaningful change.
-  const APP_VERSION = '1.0.2';
+  const APP_VERSION = '1.0.3-test';
 
   async function showBuildInfo() {
     try {
