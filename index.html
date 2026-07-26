@@ -1946,15 +1946,17 @@
   let pipOscillator = null;
   let pipDrawInterval = null;
 
-  function drawPipFrame() {
-    if (!pipCanvas) return;
-    const ctx = pipCanvas.getContext('2d');
+function drawPipFrame() {
+    if (!pipCanvas || !pipCtx) return;
+    const ctx = pipCtx;
     const w = pipCanvas.width, h = pipCanvas.height;
     const reached = elapsedMs >= goalMs();
 
+    // ניקוי הרקע
     ctx.fillStyle = reached ? '#1E2A24' : '#232730';
     ctx.fillRect(0, 0, w, h);
 
+    // ציור הטקסט (כותרת)
     const title = (currentTitle && currentTitle.trim()) || t('defaultTaskTitle');
     ctx.fillStyle = '#8B92A3';
     ctx.font = '600 22px Heebo, sans-serif';
@@ -1962,13 +1964,26 @@
     ctx.textBaseline = 'middle';
     ctx.fillText(title.length > 28 ? title.slice(0, 27) + '…' : title, w / 2, h * 0.28);
 
+    // ציור השעון
     ctx.fillStyle = reached ? '#5FCF94' : '#E8A33D';
     ctx.font = '700 64px "JetBrains Mono", monospace';
     ctx.fillText(formatElapsedNoCentis(elapsedMs), w / 2, h * 0.58);
 
+    // ציור הסטטוס
     ctx.fillStyle = reached ? '#5FCF94' : '#8B92A3';
     ctx.font = '500 18px Heebo, sans-serif';
-    ctx.fillText(reached ? t('statusReached') : t('statusGoal', minMinutes), w / 2, h * 0.85);
+    ctx.fillText(reached ? t('statusReached') : t('statusGoal', minMinutes), w / 2, h * 0.77);
+
+    // --- מבחן האנימציה: כדור שזז ימינה ושמאלה ---
+    // חישוב המיקום של הכדור על בסיס הזמן האמיתי (כדי שיזוז חלק)
+    const timeMs = Date.now();
+    // שימוש בפונקציית סינוס כדי ליצור תנועת מטוטלת (בין קצה שמאלי לימני)
+    const dotX = (w / 2) + Math.sin(timeMs / 250) * (w / 2 - 30);
+    
+    ctx.beginPath();
+    ctx.arc(dotX, h - 18, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#E8E6E1'; // צבע בהיר ובולט
+    ctx.fill();
   }
 
   function renderPipFrame() {
