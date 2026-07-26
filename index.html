@@ -1993,22 +1993,23 @@ function drawPipFrame() {
     }
   }
 
-  function startPipKeepAlive() {
+function startPipKeepAlive() {
     if (pipAudioCtx) return;
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       pipAudioCtx = new Ctx();
       pipOscillator = pipAudioCtx.createOscillator();
       const gain = pipAudioCtx.createGain();
-      pipOscillator.frequency.value = 440;    // TEST: audible A4 tone (revert to 18500 later)
-      gain.gain.value = 0.05;                 // TEST: audible but not too loud (revert to 0.001 later)
+      
+      pipOscillator.frequency.value = 18500;    // תדר גבוה כמעט על-קולי (לא נשמע)
+      gain.gain.value = 0.00001;                 // עוצמה קרובה לאפס כדי למנוע שמע אבל להשאיר את הטאב "חי"
+      
       pipOscillator.connect(gain);
       gain.connect(pipAudioCtx.destination);
       pipOscillator.start();
-      // AudioContext may start suspended; the click that opened PiP is a valid
-      // user gesture, so resume() is allowed here.
+      
       pipAudioCtx.resume().catch(() => {});
-    } catch (e) { /* if audio fails, PiP still opens but may freeze in background */ }
+    } catch (e) { /* ignore */ }
   }
 
   function stopPipKeepAlive() {
